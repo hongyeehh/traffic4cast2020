@@ -106,7 +106,10 @@ class trafic4cast_dataset(torch.utils.data.Dataset):
         c_sample = h5py.File(file_path,'r')['array'][tstamp_ix: tstamp_ix + 18]
         x = np.moveaxis(c_sample[:12, :, :, :], -1, 1)
         y = np.moveaxis(c_sample[12:, :, :, :-1], -1, 1)
-
+        
+        city_name_path = Path(file_path.replace(self.root,''))
+        city_name = city_name_path.parts[1]
+        
         if self.reduce:
             # stack all time dimensions into the channels.
             # all channels of the same timestamp are left togehter
