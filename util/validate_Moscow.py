@@ -13,6 +13,9 @@ sys.path.append(os.getcwd())
 from runs.Moscow.config import config
 from runs.Moscow.UNet import UNet
 
+# Proposed depth 7 model
+
+
 # please enter the source data root and submission root
 source_root = r""
 submission_root = r""

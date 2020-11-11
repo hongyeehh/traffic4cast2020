@@ -13,6 +13,8 @@ sys.path.append(os.getcwd())
 from runs.Berlin.config import config
 from runs.Berlin.UNet import UNet
 
+# simplified depth 5 model
+
 # please enter the source data root and submission root
 source_root = r""
 submission_root = r""

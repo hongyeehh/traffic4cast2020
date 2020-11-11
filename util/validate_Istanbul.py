@@ -13,6 +13,7 @@ sys.path.append(os.getcwd())
 from runs.Istanbul.config import config
 from runs.Istanbul.UNet import UNet
 
+# Original Unet architechture
 
 # please enter the source data root and submission root
 source_root = r""
