@@ -8,7 +8,7 @@ config = dict()
 ##################################################################
 
 # Please enter where raw data are stored.
-config["source_dir"] = ""
+config["source_dir"] = r"D:\Traffic4\Data\2020\ori"
 
 config["debug"] = False
 config["city"] = "Berlin"
@@ -21,9 +21,9 @@ config["in_channels"] = 115
 config["n_classes"] = 48
 
 # data loader configuration
-config["num_workers"] = 1
+config["num_workers"] = 18
 # Hyper-parameters and training configuration.
-config["batch_size"] = 6
+config["batch_size"] = 4
 config["learning_rate"] = 1e-2
 
 # early stopping and lr schedule
@@ -35,6 +35,6 @@ config["num_epochs"] = 50
 if config["debug"] == True:
     config["print_every_step"] = 5
 else:
-    config["print_every_step"] = 100
+    config["print_every_step"] = 50
 config["iters_to_accumulate"] = 1
 
