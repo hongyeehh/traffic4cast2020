@@ -122,7 +122,7 @@ def train(model, train_loader, optim, device, writer, epoch, globaliter, scaler,
 
             loss_size = torch.nn.functional.mse_loss(prediction[:, :, 8:-9, 6:-6], Y) / config["iters_to_accumulate"]
 
-        scaler.scale(loss_size).backward()
+        scaler.scale(loss_size).backward() 
         if (i + 1) % config["iters_to_accumulate"] == 0:
             scaler.step(optim)
             scaler.update()
@@ -206,14 +206,13 @@ if __name__ == "__main__":
         dataset_train, batch_size=config["batch_size"], shuffle=True, num_workers=config["num_workers"]
     )
     val_loader = torch.utils.data.DataLoader(
-        dataset_val, batch_size=config["batch_size"] * 2, shuffle=False, num_workers=config["num_workers"]
+        dataset_val, batch_size=config["batch_size"], shuffle=False, num_workers=config["num_workers"]
     )
 
     device = config["device"]
 
     # define the network structure -- UNet
     # the output size is not always equal to your input size !!!
-
     model = UNet(img_ch=config["in_channels"], output_ch=config["n_classes"])
     # model = nn.DataParallel(model)
     model.to(device)

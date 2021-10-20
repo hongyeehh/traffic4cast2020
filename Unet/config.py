@@ -36,5 +36,5 @@ if config["debug"] == True:
     config["print_every_step"] = 5
 else:
     config["print_every_step"] = 50
-config["iters_to_accumulate"] = 1
+config["iters_to_accumulate"] = 2
 
