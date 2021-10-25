@@ -10,17 +10,51 @@ from tqdm import tqdm
 
 sys.path.append(os.getcwd())
 
-from runs.Berlin.config import config
-from Unet.UNet import UNet
+from multiLSTM.config import config
+from multiLSTM.convLSTM import Encoder, Forecaster, EF, CGRU_cell
 
-# simplified depth 5 model
+from collections import OrderedDict
 
 # please enter the source data root and submission root
 source_root = r"D:/Traffic4/Data/2020/ori"
 submission_root = r"D:/Traffic4/Data/2020/submit"
 
-model_root = r"D:/Traffic4/runs/UnetDeep_1632078207/checkpoint.pt"
+model_root = r"D:/Traffic4/runs/convLSTM_1634977731/checkpoint.pt"
 mask_root = r"util/masks.dict"
+
+
+convlstm_encoder_params = [
+    [
+        OrderedDict({"conv1_relu_1": [16, 16, 3, 1, 1], "pool_2": [2, 2, 0]}),
+        OrderedDict({"conv2_relu_1": [16, 32, 3, 1, 1], "pool_2": [2, 2, 0]}),
+        OrderedDict({"conv3_relu_1": [32, 96, 3, 1, 1], "pool_2": [2, 2, 0]}),
+        OrderedDict({"conv4_relu_1": [96, 192, 3, 1, 1], "pool_2": [2, 2, 0]}),
+    ],
+    [
+        CGRU_cell(input_channels=16, num_features=16, shape=(248, 224), filter_size=3),
+        CGRU_cell(input_channels=32, num_features=32, shape=(124, 112), filter_size=3),
+        CGRU_cell(input_channels=96, num_features=96, shape=(62, 56), filter_size=3),
+        CGRU_cell(input_channels=192, num_features=192, shape=(31, 28), filter_size=3),
+    ],
+]
+
+
+convlstm_forecaster_params = [
+    [
+        OrderedDict({"deconv1_relu_1": [192, 96, 3, 1, 1]}),
+        OrderedDict({"deconv2_relu_1": [96, 32, 3, 1, 1]}),
+        OrderedDict({"deconv3_relu_1": [32, 16, 3, 1, 1]}),
+        OrderedDict(
+            {"deconv4_relu_1": [16, 16, 3, 1, 1], "conv3_relu_2": [16, 16, 3, 1, 1], "conv3_3": [16, 8, 1, 1, 0]}
+        ),
+    ],
+    [
+        CGRU_cell(input_channels=192, num_features=192, shape=(31, 28), filter_size=3),
+        CGRU_cell(input_channels=96, num_features=96, shape=(62, 56), filter_size=3),
+        CGRU_cell(input_channels=32, num_features=32, shape=(124, 112), filter_size=3),
+        CGRU_cell(input_channels=16, num_features=16, shape=(248, 224), filter_size=3),
+    ],
+]
 
 
 def load_h5_file(file_path):
@@ -49,14 +83,16 @@ class WrappedModel(torch.nn.Module):
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-model = UNet(img_ch=config["in_channels"], output_ch=config["n_classes"]).to(device)
-# model = WrappedModel(model).to(device)
+encoder = Encoder(convlstm_encoder_params[0], convlstm_encoder_params[1])
+forecaster = Forecaster(convlstm_forecaster_params[0], convlstm_forecaster_params[1])
+model = EF(encoder, forecaster)
+model = WrappedModel(model).to(device)
 city = "Berlin"
 
 
 mask_dict = pickle.load(open(mask_root, "rb"))
 
-padd = torch.nn.ZeroPad2d((6, 6, 8, 9))
+padd = torch.nn.ZeroPad2d((6, 6, 1, 0))
 
 state_dict = torch.load(model_root, map_location=device)
 model.load_state_dict(state_dict)
@@ -65,6 +101,7 @@ model.eval()
 # load static data
 filepath = glob.glob(os.path.join(source_root, city, f"{city}_static_2019.h5"))[0]
 static = load_h5_file(filepath)
+
 static = torch.from_numpy(static).permute(2, 0, 1).unsqueeze(0).to(device).float()
 
 # load mask
@@ -78,11 +115,7 @@ for path in tqdm(file_paths):
     x = np.moveaxis(all_data, -1, 2)
 
     x = torch.from_numpy(x).to(device)
-    # reduce
-    x = x.reshape(x.shape[0], -1, x.shape[-2], x.shape[-1])
-
-    # concat the static data
-    x = torch.cat([x, static.repeat(x.shape[0], 1, 1, 1)], axis=1)
+    x = torch.cat([x, static.repeat(x.shape[0], x.shape[1], 1, 1, 1)], axis=2)
     x = x / 255
 
     with torch.no_grad():
@@ -90,8 +123,7 @@ for path in tqdm(file_paths):
         pred = model(inputs)
 
         # expand
-        pred = pred.view(pred.shape[0], 6, 8, pred.shape[-2], pred.shape[-1])
-        res = pred[:, :, :, 8:-9, 6:-6].cpu().float()
+        res = pred[:, :, :, 1:, 6:-6].cpu().float()
 
     # apply mask
     # masks = mask_.expand(res.shape)

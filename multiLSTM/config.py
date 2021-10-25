@@ -18,15 +18,15 @@ config["device"] = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 ##################################################################
 
 # data loader configuration
-config["num_workers"] = 18
+config["num_workers"] = 10
 
 
 # Hyper-parameters and training configuration.
-config["batch_size"] = 6
+config["batch_size"] = 8
 config["learning_rate"] = 1e-2
 
 # early stopping and lr schedule
-config["patience"] = 3
+config["patience"] = 2
 config["lr_step_size"] = 1
 config["lr_gamma"] = 0.1
 
@@ -35,7 +35,7 @@ config["num_epochs"] = 50
 config["iters_to_accumulate"] = 1
 
 if config["debug"] == False:
-    config["print_every_step"] = 100
+    config["print_every_step"] = 50
 else:
     config["print_every_step"] = 5
 

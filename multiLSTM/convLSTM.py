@@ -4,8 +4,6 @@ import torch
 
 from collections import OrderedDict
 
-from config import config
-
 
 class CGRU_cell(nn.Module):
     """
@@ -25,12 +23,12 @@ class CGRU_cell(nn.Module):
                 self.input_channels + self.num_features, 2 * self.num_features, self.filter_size, 1, self.padding
             ),
             nn.GroupNorm(2 * self.num_features // 16, 2 * self.num_features),
-            # nn.LayerNorm(2 * self.num_features),
+            # nn.BatchNorm2d(2 * self.num_features),
         )
         self.conv2 = nn.Sequential(
             nn.Conv2d(self.input_channels + self.num_features, self.num_features, self.filter_size, 1, self.padding),
             nn.GroupNorm(self.num_features // 16, self.num_features),
-            # nn.LayerNorm(self.num_features),
+            # nn.BatchNorm2d(self.num_features),
         )
 
     def forward(self, inputs=None, hidden_state=None, seq_len=10):
@@ -259,6 +257,8 @@ class EF(nn.Module):
 # ]
 
 if __name__ == "__main__":
+    from config import config
+
     encoder = Encoder(convlstm_encoder_params[0], convlstm_encoder_params[1]).to(config["device"])
     forecaster = Forecaster(convlstm_forecaster_params[0], convlstm_forecaster_params[1]).to(config["device"])
     encoder_forecaster = EF(encoder, forecaster).to(config["device"])
